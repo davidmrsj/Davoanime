@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.map
 class ExampleRepositoryImpl @Inject constructor(
     private val apiService: ExampleApiService
 ) : ExampleRepository {
+
     override fun getExamples(): Flow<List<ExampleItem>> {
         return flow {
             emit(apiService.getExamples())
@@ -20,4 +21,5 @@ class ExampleRepositoryImpl @Inject constructor(
             dtoList.map { it.toDomain() }
         }.flowOn(Dispatchers.IO)
     }
+
 }
