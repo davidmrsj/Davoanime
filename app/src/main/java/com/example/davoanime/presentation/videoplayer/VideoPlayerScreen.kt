@@ -3,7 +3,6 @@
 package com.example.davoanime.presentation.videoplayer
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -33,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.ui.PlayerView
 
 private const val SAMPLE_URL = "https://nika.playmudos.com/TWlKN2tqZUt1WEZWdEdhKzl2c2Fzci9xeFA4Q0NhanVCQnRad21pRzErUVl3UGsvT2FWUTJvd2RqVUJFM0NLMw.m3u8?st=A4RfHUjLvsIVSYbbUVl45Q&e=1763267589"
@@ -53,15 +54,18 @@ fun VideoPlayerScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun VideoPlayerContent() {
     val context = LocalContext.current
-    val exoPlayer = remember {
+    val mediaItem = remember { MediaItem.fromUri(SAMPLE_URL) }
+    var showPlayer by rememberSaveable { mutableStateOf(false) }
+
+    val exoPlayer = remember(mediaItem, context) {
         ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri(SAMPLE_URL)
-            setMediaItem(mediaItem)
+            val mediaSource = HlsMediaSource.Factory(DefaultHttpDataSource.Factory())
+                .createMediaSource(mediaItem)
+            setMediaSource(mediaSource)
             playWhenReady = true
             prepare()
         }
     }
-    var showPlayer by rememberSaveable { mutableStateOf(false) }
 
     DisposableEffect(exoPlayer) {
         onDispose {
@@ -70,45 +74,43 @@ private fun VideoPlayerContent() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .align(if (showPlayer) Alignment.TopCenter else Alignment.Center)
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = if (showPlayer) Arrangement.Top else Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Button(
-                onClick = {
-                    if (!showPlayer) {
-                        showPlayer = true
-                    }
-                    exoPlayer.seekToDefaultPosition()
-                    exoPlayer.play()
-                },
-                modifier = Modifier.semantics {
-                    contentDescription = "Start video playback"
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 32.dp),
+        verticalArrangement = if (showPlayer) Arrangement.Top else Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Button(
+            onClick = {
+                if (!showPlayer) {
+                    showPlayer = true
                 }
-            ) {
-                Text(text = "Start")
+                exoPlayer.seekToDefaultPosition()
+                exoPlayer.play()
+            },
+            modifier = Modifier.semantics {
+                contentDescription = "Start video playback"
             }
+        ) {
+            Text(text = "Start")
+        }
 
-            if (showPlayer) {
-                Spacer(modifier = Modifier.height(16.dp))
-                AndroidView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .aspectRatio(16f / 9f)
-                        .semantics { contentDescription = "Media player" },
-                    factory = { ctx ->
-                        PlayerView(ctx).apply {
-                            useController = true
-                            player = exoPlayer
-                        }
+        if (showPlayer) {
+            Spacer(modifier = Modifier.height(16.dp))
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .aspectRatio(16f / 9f)
+                    .semantics { contentDescription = "Media player" },
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        useController = true
+                        player = exoPlayer
                     }
-                )
-            }
+                }
+            )
         }
     }
 }
