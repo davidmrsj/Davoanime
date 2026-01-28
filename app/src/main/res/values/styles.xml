@@ -1,0 +1,154 @@
+<resources>
+
+    <style name="TextAppearance.AnimeStream" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="Widget.AnimeStream" parent="Widget.Material3.Button">
+        <item name="shapeAppearance">@style/ShapeAppearance.AnimeStream.Medium</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.TitleXL">
+        <item name="android:textSize">@dimen/text_size_title_xl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.TitleL">
+        <item name="android:textSize">@dimen/text_size_title_l</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.TitleM">
+        <item name="android:textSize">@dimen/text_size_title_m</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.BodyL">
+        <item name="android:textSize">@dimen/text_size_body_l</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.BodyM">
+        <item name="android:textSize">@dimen/text_size_body_m</item>
+        <item name="android:textColor">@color/colorTextSecondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.BodyS">
+        <item name="android:textSize">@dimen/text_size_body_s</item>
+        <item name="android:textColor">@color/colorTextSecondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.LabelL">
+        <item name="android:textSize">@dimen/text_size_label_l</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.LabelM">
+        <item name="android:textSize">@dimen/text_size_label_m</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="TextAppearance.AnimeStream.LabelS">
+        <item name="android:textSize">@dimen/text_size_label_s</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextSecondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="ShapeAppearance.AnimeStream.Small" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">@dimen/radius_8</item>
+    </style>
+
+    <style name="ShapeAppearance.AnimeStream.Medium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">@dimen/radius_16</item>
+    </style>
+
+    <style name="ShapeAppearance.AnimeStream.Large" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">@dimen/radius_20</item>
+    </style>
+
+    <style name="Widget.AnimeStream.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
+        <item name="backgroundTint">@color/surfaceColor</item>
+        <item name="itemIconTint">@color/colorTextSecondary</item>
+        <item name="itemTextColor">@color/colorTextSecondary</item>
+        <item name="itemRippleColor">@color/colorPrimary</item>
+        <item name="elevation">@dimen/elevation_2</item>
+    </style>
+
+    <style name="Widget.AnimeStream.Button.Primary" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/bg_button_primary</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/colorOnPrimary</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.AnimeStream.Medium</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingLeft">@dimen/spacing_16</item>
+        <item name="android:paddingRight">@dimen/spacing_16</item>
+    </style>
+
+    <style name="Widget.AnimeStream.Button.Secondary" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/bg_button_secondary</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.AnimeStream.Medium</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingLeft">@dimen/spacing_16</item>
+        <item name="android:paddingRight">@dimen/spacing_16</item>
+    </style>
+
+    <style name="Widget.AnimeStream.Card.AnimePoster" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">@dimen/radius_16</item>
+        <item name="cardElevation">@dimen/elevation_2</item>
+        <item name="cardBackgroundColor">@color/surfaceColor</item>
+    </style>
+
+    <style name="Widget.AnimeStream.Card.Info" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">@dimen/radius_16</item>
+        <item name="cardElevation">@dimen/elevation_1</item>
+        <item name="cardBackgroundColor">@color/surfaceColor</item>
+    </style>
+
+    <style name="Widget.AnimeStream.Card.Episode" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">@dimen/radius_12</item>
+        <item name="cardElevation">@dimen/elevation_1</item>
+        <item name="cardBackgroundColor">@color/surfaceColor</item>
+    </style>
+
+    <style name="Widget.AnimeStream.Chip.Filter" parent="Widget.Material3.Chip.Filter">
+        <item name="android:background">@drawable/bg_chip_filter</item>
+        <item name="chipBackgroundColor">@android:color/transparent</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipStrokeColor">@color/colorOutline</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.AnimeStream.Large</item>
+    </style>
+
+    <style name="Widget.AnimeStream.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/surfaceColor</item>
+        <item name="boxStrokeColor">@color/colorOutline</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.AnimeStream.Medium</item>
+        <item name="hintTextColor">@color/colorTextSecondary</item>
+        <item name="android:paddingTop">@dimen/spacing_4</item>
+        <item name="android:paddingBottom">@dimen/spacing_4</item>
+    </style>
+
+    <style name="Widget.AnimeStream.PlayerControls">
+        <item name="android:background">@drawable/bg_glass_surface</item>
+        <item name="android:padding">@dimen/spacing_16</item>
+    </style>
+</resources>

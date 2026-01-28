@@ -1,3 +1,63 @@
 <resources>
     <string name="app_name">Davoanime</string>
+
+        <string name="nav_inicio">Inicio</string>
+        <string name="nav_buscar">Buscar</string>
+        <string name="nav_favoritos">Favoritos</string>
+        <string name="nav_perfil">Perfil</string>
+
+        <string name="section_continuar">Continuar viendo</string>
+        <string name="section_tendencias">Tendencias</string>
+        <string name="section_nuevos">Nuevos episodios</string>
+        <string name="section_top">Top de la semana</string>
+        <string name="section_recomendados">Recomendados</string>
+
+        <string name="btn_ver_ahora">Ver ahora</string>
+        <string name="btn_lista">Añadir a lista</string>
+        <string name="btn_descargar">Descargar</string>
+        <string name="btn_compartir">Compartir</string>
+
+        <string name="label_sinopsis">Sinopsis</string>
+        <string name="label_ver_mas">Ver más</string>
+        <string name="label_ver_menos">Ver menos</string>
+
+        <string name="tab_episodios">Episodios</string>
+        <string name="tab_info">Información</string>
+        <string name="tab_recomendados">Recomendados</string>
+
+        <string name="search_hint">Buscar anime</string>
+        <string name="btn_filtros">Filtros</string>
+        <string name="label_ordenar">Ordenar</string>
+        <string name="label_genero">Género</string>
+        <string name="label_anio">Año</string>
+        <string name="label_estado">Estado</string>
+        <string name="btn_limpiar">Limpiar</string>
+        <string name="btn_aplicar">Aplicar</string>
+        <string name="label_resultados">Resultados</string>
+        <string name="empty_search">Sin resultados</string>
+
+        <string name="player_reproducir">Reproducir</string>
+        <string name="player_pausar">Pausar</string>
+        <string name="player_siguiente">Siguiente episodio</string>
+        <string name="player_anterior">Episodio anterior</string>
+        <string name="player_calidad">Calidad</string>
+        <string name="player_subs">Subtítulos</string>
+        <string name="player_audio">Audio</string>
+        <string name="player_auto">Automático</string>
+        <string name="player_ajustes">Ajustes</string>
+
+        <string name="ep_temporada">Temporada</string>
+        <string name="ep_sort_new">Más recientes</string>
+        <string name="ep_sort_old">Más antiguos</string>
+        <string name="ep_visto">Visto</string>
+        <string name="ep_descargar">Descargar episodio</string>
+        <string name="ep_reanudar">Reanudar</string>
+
+        <string name="state_cargando">Cargando…</string>
+        <string name="state_reintentar">Reintentar</string>
+        <string name="state_offline">Sin conexión</string>
+        <string name="state_error">Error</string>
+
+        <string name="btn_aceptar">Aceptar</string>
+        <string name="btn_cancelar">Cancelar</string>
 </resources>

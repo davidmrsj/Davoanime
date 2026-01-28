@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="spacing_2">2dp</dimen>
+    <dimen name="spacing_4">4dp</dimen>
+    <dimen name="spacing_8">8dp</dimen>
+    <dimen name="spacing_12">12dp</dimen>
+    <dimen name="spacing_16">16dp</dimen>
+    <dimen name="spacing_20">20dp</dimen>
+    <dimen name="spacing_24">24dp</dimen>
+    <dimen name="spacing_32">32dp</dimen>
+    <dimen name="spacing_40">40dp</dimen>
+    <dimen name="spacing_48">48dp</dimen>
+
+    <dimen name="radius_8">8dp</dimen>
+    <dimen name="radius_12">12dp</dimen>
+    <dimen name="radius_16">16dp</dimen>
+    <dimen name="radius_20">20dp</dimen>
+
+    <dimen name="elevation_0">0dp</dimen>
+    <dimen name="elevation_1">1dp</dimen>
+    <dimen name="elevation_2">2dp</dimen>
+    <dimen name="elevation_4">4dp</dimen>
+    <dimen name="elevation_8">8dp</dimen>
+
+    <dimen name="text_size_title_xl">28sp</dimen>
+    <dimen name="text_size_title_l">24sp</dimen>
+    <dimen name="text_size_title_m">20sp</dimen>
+
+    <dimen name="text_size_body_l">16sp</dimen>
+    <dimen name="text_size_body_m">14sp</dimen>
+    <dimen name="text_size_body_s">12sp</dimen>
+
+    <dimen name="text_size_label_l">14sp</dimen>
+    <dimen name="text_size_label_m">12sp</dimen>
+    <dimen name="text_size_label_s">11sp</dimen>
+</resources>

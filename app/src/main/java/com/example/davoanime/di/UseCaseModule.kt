@@ -1,6 +1,6 @@
 package com.example.davoanime.di
 
-import com.example.davoanime.domain.repository.ExampleRepository
+import com.example.davoanime.domain.repository.AnimeJKRepository
 import com.example.davoanime.domain.usecase.GetExampleItemsUseCase
 import dagger.Module
 import dagger.Provides
@@ -14,7 +14,7 @@ object UseCaseModule {
     @Provides
     @Singleton
     fun provideGetExampleItemsUseCase(
-        exampleRepository: ExampleRepository
+        exampleRepository: AnimeJKRepository
     ): GetExampleItemsUseCase {
         return GetExampleItemsUseCase(exampleRepository)
     }

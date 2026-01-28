@@ -1,6 +1,6 @@
 package com.example.davoanime.di
 
-import com.example.davoanime.data.remote.api.ExampleApiService
+import com.example.davoanime.data.remote.api.AnimeJKApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,7 +14,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val BASE_URL = "https://api.example.com/"
+    private const val BASE_URL = "https://29df50a8afe5.ngrok-free.app/nimejk/"
 
     @Provides
     @Singleton
@@ -48,7 +48,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideExampleApiService(retrofit: Retrofit): ExampleApiService {
-        return retrofit.create(ExampleApiService::class.java)
+    fun provideExampleApiService(retrofit: Retrofit): AnimeJKApiService {
+        return retrofit.create(AnimeJKApiService::class.java)
     }
 }

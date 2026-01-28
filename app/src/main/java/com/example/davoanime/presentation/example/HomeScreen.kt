@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -19,10 +21,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.davoanime.domain.model.ExampleItem
+import com.example.davoanime.presentation.components.AnimeListItem
 
 @Composable
-fun ExampleScreen(
+fun HomeScreen(
     viewModel: ExampleViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -52,18 +54,26 @@ fun ExampleContent(state: ExampleUiState) {
                 }
             }
             else -> {
-                LazyColumn(
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+
                     items(state.items) { item ->
-                        Text(text = item.title, style = MaterialTheme.typography.bodyLarge)
+                        AnimeListItem(modifier = Modifier.fillMaxSize(), anime = item, onclick = {})
                     }
                 }
             }
         }
     }
+
+    Text(
+        text = "Hola mundo",
+        style = MaterialTheme.typography.bodyLarge
+    )
 }
 
 @Preview
@@ -80,8 +90,8 @@ private fun ExampleContentPreviewData() {
     ExampleContent(
         state = ExampleUiState(
             items = listOf(
-                ExampleItem(id = "1", title = "Example A"),
-                ExampleItem(id = "2", title = "Example B")
+                 //ExampleItem(id = "1", title = "Example A"),
+                 //ExampleItem(id = "2", title = "Example B")
             )
         )
     )

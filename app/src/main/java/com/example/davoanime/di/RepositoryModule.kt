@@ -1,7 +1,7 @@
 package com.example.davoanime.di
 
-import com.example.davoanime.data.repository.ExampleRepositoryImpl
-import com.example.davoanime.domain.repository.ExampleRepository
+import com.example.davoanime.data.repository.AnimeJKRepositoryImpl
+import com.example.davoanime.domain.repository.AnimeJKRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -13,7 +13,8 @@ import javax.inject.Singleton
 abstract class RepositoryModule {
     @Binds
     @Singleton
-    abstract fun bindExampleRepository(
-        repositoryImpl: ExampleRepositoryImpl
-    ): ExampleRepository
+    abstract fun bindAnimeJKRepository(
+        repositoryImpl: AnimeJKRepositoryImpl
+    ): AnimeJKRepository
+
 }
