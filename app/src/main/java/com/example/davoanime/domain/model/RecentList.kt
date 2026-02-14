@@ -13,8 +13,9 @@ data class Reciente(
     val image: String,
     val thumbnail: String,
     val animeId: Int,
-    val timestamp: String
+    val timestamp: String,
+    val animeTitle: String = "",
+    val animeType: String = "",
+    val animeImage: String = "",
+    val animeSlug: String = ""
 )
-
-
-
