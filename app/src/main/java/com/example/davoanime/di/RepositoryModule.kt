@@ -1,7 +1,9 @@
 package com.example.davoanime.di
 
 import com.example.davoanime.data.repository.AnimeJKRepositoryImpl
+import com.example.davoanime.data.repository.WatchProgressRepositoryImpl
 import com.example.davoanime.domain.repository.AnimeJKRepository
+import com.example.davoanime.domain.repository.WatchProgressRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,4 +19,9 @@ abstract class RepositoryModule {
         repositoryImpl: AnimeJKRepositoryImpl
     ): AnimeJKRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindWatchProgressRepository(
+        repositoryImpl: WatchProgressRepositoryImpl
+    ): WatchProgressRepository
 }

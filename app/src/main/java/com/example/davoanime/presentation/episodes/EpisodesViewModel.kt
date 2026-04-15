@@ -3,9 +3,11 @@ package com.example.davoanime.presentation.episodes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.davoanime.presentation.util.WatchProgressManager
 import com.example.davoanime.domain.model.Episode
 import com.example.davoanime.domain.usecase.GetAnimeDetailUseCase
 import com.example.davoanime.domain.usecase.GetEpisodesUseCase
+import com.example.davoanime.domain.usecase.GetSeriesProgressUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +22,8 @@ import javax.inject.Inject
 class EpisodesViewModel @Inject constructor(
     private val getEpisodesUseCase: GetEpisodesUseCase,
     private val getAnimeDetailUseCase: GetAnimeDetailUseCase,
+    private val getSeriesProgressUseCase: GetSeriesProgressUseCase,
+    private val watchProgressManager: WatchProgressManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -64,6 +68,15 @@ class EpisodesViewModel @Inject constructor(
                     }
                 }
         }
+
+        viewModelScope.launch {
+            getSeriesProgressUseCase(animeId)
+                .catch { }
+                .collect { progressList ->
+                    val progressMap = progressList.associateBy { it.episodeId }
+                    _state.update { it.copy(episodeProgress = progressMap) }
+                }
+        }
     }
 
     fun loadMore() {
@@ -76,6 +89,17 @@ class EpisodesViewModel @Inject constructor(
                 displayedEpisodes = nextBatch,
                 hasMore = nextBatch.size < allEpisodes.size
             )
+        }
+    }
+
+    fun toggleWatched(episodeId: Int) {
+        val current = _state.value.episodeProgress[episodeId]
+        viewModelScope.launch {
+            if (current?.isWatched == true) {
+                watchProgressManager.markAsUnwatched(episodeId)
+            } else {
+                watchProgressManager.markAsWatched(episodeId)
+            }
         }
     }
 

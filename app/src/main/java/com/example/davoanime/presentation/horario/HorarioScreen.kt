@@ -59,7 +59,7 @@ fun HorarioScreen(
         onDaySelected = viewModel::selectDay,
         onRetry = viewModel::retry,
         onAnimeClick = { anime ->
-            navController.navigate(Screen.Detail.createRoute(anime.id))
+            navController.navigate(Screen.Detail.createRoute(anime.id, anime.image))
         }
     )
 }

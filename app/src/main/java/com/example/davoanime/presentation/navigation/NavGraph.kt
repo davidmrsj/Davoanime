@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.example.davoanime.presentation.detail.AnimeDetailScreen
 import com.example.davoanime.presentation.episodes.EpisodesScreen
 import com.example.davoanime.presentation.example.HomeScreen
+import com.example.davoanime.presentation.historial.HistorialScreen
 import com.example.davoanime.presentation.horario.HorarioScreen
 import com.example.davoanime.presentation.player.PlayerScreen
 import com.example.davoanime.presentation.search.SearchScreen
@@ -33,6 +34,10 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             HorarioScreen(navController = navController)
         }
 
+        composable(Screen.Historial.route) {
+            HistorialScreen(navController = navController)
+        }
+
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("animeId") { type = NavType.IntType })
@@ -49,7 +54,10 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
 
         composable(
             route = Screen.Player.route,
-            arguments = listOf(navArgument("episodeId") { type = NavType.IntType })
+            arguments = listOf(
+                navArgument("episodeId") { type = NavType.IntType },
+                navArgument("animeId") { type = NavType.IntType }
+            )
         ) {
             PlayerScreen(navController = navController)
         }

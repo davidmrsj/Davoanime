@@ -1,6 +1,7 @@
 package com.example.davoanime.presentation.episodes
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,6 +30,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -54,6 +57,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.davoanime.R
 import com.example.davoanime.domain.model.Episode
+import com.example.davoanime.domain.model.WatchProgress
 import com.example.davoanime.presentation.navigation.Screen
 
 @Composable
@@ -67,10 +71,11 @@ fun EpisodesScreen(
         state = state,
         onBackClick = { navController.popBackStack() },
         onEpisodeClick = { episode ->
-            navController.navigate(Screen.Player.createRoute(episode.id))
+            navController.navigate(Screen.Player.createRoute(episode.id, episode.animeId))
         },
         onLoadMore = viewModel::loadMore,
-        onRetry = viewModel::retry
+        onRetry = viewModel::retry,
+        onToggleWatched = viewModel::toggleWatched
     )
 }
 
@@ -81,7 +86,8 @@ fun EpisodesContent(
     onBackClick: () -> Unit,
     onEpisodeClick: (Episode) -> Unit,
     onLoadMore: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onToggleWatched: (Int) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
 
@@ -189,7 +195,9 @@ fun EpisodesContent(
                     items(state.displayedEpisodes, key = { it.id }) { episode ->
                         EpisodeCard(
                             episode = episode,
-                            onClick = { onEpisodeClick(episode) }
+                            progress = state.episodeProgress[episode.id],
+                            onClick = { onEpisodeClick(episode) },
+                            onLongClick = { onToggleWatched(episode.id) }
                         )
                     }
 
@@ -211,66 +219,100 @@ fun EpisodesContent(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EpisodeCard(
     episode: Episode,
-    onClick: () -> Unit
+    progress: WatchProgress? = null,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(dimensionResource(id = R.dimen.radius_12)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen.elevation_1))
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimensionResource(id = R.dimen.spacing_12)),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(episode.image.ifEmpty { "https://via.placeholder.com/320x180/1a1a1a/666666?text=Episodio+${episode.number}" })
-                    .crossfade(true)
-                    .error(android.R.drawable.ic_menu_gallery)
-                    .build(),
-                contentDescription = episode.title,
-                contentScale = ContentScale.Crop,
+        Column {
+            Row(
                 modifier = Modifier
-                    .width(140.dp)
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(dimensionResource(id = R.dimen.radius_8)))
-            )
+                    .fillMaxWidth()
+                    .padding(dimensionResource(id = R.dimen.spacing_12)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(episode.image.ifEmpty { "https://via.placeholder.com/320x180/1a1a1a/666666?text=Episodio+${episode.number}" })
+                            .crossfade(true)
+                            .error(android.R.drawable.ic_menu_gallery)
+                            .build(),
+                        contentDescription = episode.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .width(140.dp)
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(dimensionResource(id = R.dimen.radius_8)))
+                    )
 
-            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_12)))
+                    // Mini progress bar on thumbnail
+                    if (progress != null && !progress.isWatched && progress.progressPercent > 0f) {
+                        LinearProgressIndicator(
+                            progress = { progress.progressPercent },
+                            modifier = Modifier
+                                .width(140.dp)
+                                .height(3.dp)
+                                .align(Alignment.BottomCenter)
+                                .clip(RoundedCornerShape(bottomStart = dimensionResource(id = R.dimen.radius_8), bottomEnd = dimensionResource(id = R.dimen.radius_8))),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Episodio ${episode.number}",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_12)))
 
-                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_4)))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Episodio ${episode.number}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                Text(
-                    text = episode.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_4)))
+
+                    Text(
+                        text = episode.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (progress?.isWatched == true) {
+                    Icon(
+                        imageVector = Icons.Filled.Visibility,
+                        contentDescription = "Visto",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_4)))
+                }
+
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = "Play",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
                 )
             }
-
-            Icon(
-                imageVector = Icons.Filled.PlayArrow,
-                contentDescription = "Play",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
         }
     }
 }

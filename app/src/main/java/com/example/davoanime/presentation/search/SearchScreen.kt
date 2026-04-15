@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,6 +54,7 @@ import com.example.davoanime.presentation.components.SearchTopBar
 import com.example.davoanime.presentation.navigation.Screen
 import com.example.davoanime.presentation.theme.Primary
 import com.example.davoanime.presentation.theme.Secondary
+import com.example.davoanime.presentation.util.isTv
 
 @Composable
 fun SearchScreen(
@@ -134,7 +136,7 @@ fun SearchScreen(
                 else -> {
                     LazyVerticalGrid(
                         state = gridState,
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Fixed(if(isTv(LocalContext.current)) 5 else 2),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             start = dimensionResource(id = R.dimen.spacing_16),
@@ -149,7 +151,7 @@ fun SearchScreen(
                             SearchAnimeListItem(
                                 anime = anime,
                                 onClick = {
-                                    navController?.navigate(Screen.Detail.createRoute(anime.id))
+                                    navController?.navigate(Screen.Detail.createRoute(anime.id, anime.image))
                                 }
                             )
                         }

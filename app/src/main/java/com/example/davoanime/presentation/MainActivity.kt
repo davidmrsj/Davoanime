@@ -9,14 +9,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.davoanime.presentation.components.BottomNavBar
 import com.example.davoanime.presentation.navigation.NavGraph
 import com.example.davoanime.presentation.navigation.Screen
 import com.example.davoanime.presentation.theme.DavoanimeTheme
+import com.example.davoanime.presentation.util.LocalIsTv
+import com.example.davoanime.presentation.util.isTv
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -25,32 +29,38 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DavoanimeTheme {
-                val navController = rememberNavController()
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
+            val isTvDevice = isTv(this)
 
-                val showBottomBar = currentRoute in listOf(
-                    Screen.Home.route,
-                    Screen.Search.route,
-                    Screen.Horario.route
-                )
+            CompositionLocalProvider(LocalIsTv provides isTvDevice) {
+                DavoanimeTheme {
+                    val navController = rememberNavController()
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
 
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Scaffold(
-                        bottomBar = {
-                            if (showBottomBar) {
-                                BottomNavBar(navController = navController)
+                    val showBottomBar = currentRoute in listOf(
+                        Screen.Home.route,
+                        Screen.Search.route,
+                        Screen.Horario.route,
+                        Screen.Historial.route
+                    )
+
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        Scaffold(
+                            bottomBar = {
+                                if (showBottomBar) {
+                                    BottomNavBar(navController = navController)
+                                }
                             }
+                        ) { paddingValues ->
+                            NavGraph(
+                                navController = navController,
+                                modifier = Modifier.padding(bottom = paddingValues.calculateBottomPadding())
+                            )
                         }
-                    ) { paddingValues ->
-                        NavGraph(
-                            navController = navController,
-                            modifier = Modifier.padding(bottom = paddingValues.calculateBottomPadding())
-                        )
                     }
                 }
             }

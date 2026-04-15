@@ -14,7 +14,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val BASE_URL = "http://davoanime.ddns.net:8000/nimejk/"
+    private const val BASE_URL = "https://bare-dorthy-davoanime-f010179c.koyeb.app/nimejk/"
 
     @Provides
     @Singleton

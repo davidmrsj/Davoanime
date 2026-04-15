@@ -2,6 +2,7 @@ package com.example.davoanime.presentation.example
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.davoanime.domain.usecase.GetContinueWatchingUseCase
 import com.example.davoanime.domain.usecase.GetExampleItemsUseCase
 import com.example.davoanime.domain.usecase.GetHorarioUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ import java.util.Calendar
 @HiltViewModel
 class ExampleViewModel @Inject constructor(
     private val getExampleItemsUseCase: GetExampleItemsUseCase,
-    private val getHorarioUseCase: GetHorarioUseCase
+    private val getHorarioUseCase: GetHorarioUseCase,
+    private val getContinueWatchingUseCase: GetContinueWatchingUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(ExampleUiState())
     val state: StateFlow<ExampleUiState> = _state.asStateFlow()
@@ -44,6 +46,15 @@ class ExampleViewModel @Inject constructor(
                     _state.update {
                         it.copy(isLoading = false, items = items, error = null)
                     }
+                }
+        }
+
+        // Seguir Viendo - reactivo via Flow
+        viewModelScope.launch {
+            getContinueWatchingUseCase()
+                .catch { /* Silently fail */ }
+                .collect { items ->
+                    _state.update { it.copy(continueWatching = items) }
                 }
         }
 

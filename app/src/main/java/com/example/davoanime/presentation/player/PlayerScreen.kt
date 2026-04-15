@@ -3,11 +3,11 @@ package com.example.davoanime.presentation.player
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.os.Build
+import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,8 +15,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +32,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -43,12 +42,14 @@ import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -61,16 +62,20 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,7 +97,6 @@ import com.example.davoanime.presentation.theme.Secondary
 import com.example.davoanime.presentation.theme.Surface
 import com.example.davoanime.presentation.theme.SurfaceVariant
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun PlayerScreen(
@@ -183,14 +187,69 @@ fun PlayerScreen(
             }
         }
 
+        state.seriesCompleted -> {
+            SeriesCompletedOverlay(onBack = { navController.popBackStack() })
+        }
+
         state.streamUrl != null -> {
             VideoPlayer(
                 streamUrl = state.streamUrl!!,
                 episodeTitle = state.episodeTitle,
                 showControls = state.showControls,
+                savedPositionMs = state.savedPositionMs,
+                showResumeDialog = state.showResumeDialog,
+                showNextEpisodeOverlay = state.showNextEpisodeOverlay,
+                nextEpisodeCountdown = state.nextEpisodeCountdown,
+                nextEpisodeTitle = state.nextEpisodeTitle,
                 onToggleControls = viewModel::toggleControls,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onPositionUpdate = viewModel::onPositionUpdate,
+                onSaveProgressOnExit = viewModel::saveProgressOnExit,
+                onSkipToNext = viewModel::skipToNextEpisode,
+                onCancelAutoAdvance = viewModel::cancelAutoAdvance,
+                onResumeFromSaved = viewModel::resumeFromSaved,
+                onRestartEpisode = viewModel::restartEpisode
             )
+        }
+    }
+}
+
+@Composable
+fun SeriesCompletedOverlay(onBack: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = Primary,
+                modifier = Modifier.size(72.dp)
+            )
+            Text(
+                text = "Serie completada",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = "Has terminado todos los episodios",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onBack,
+                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+            ) {
+                Text("Volver", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -202,12 +261,22 @@ fun VideoPlayer(
     streamUrl: String,
     episodeTitle: String,
     showControls: Boolean,
+    savedPositionMs: Long,
+    showResumeDialog: Boolean,
+    showNextEpisodeOverlay: Boolean,
+    nextEpisodeCountdown: Int,
+    nextEpisodeTitle: String,
     onToggleControls: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onPositionUpdate: (Long, Long) -> Unit,
+    onSaveProgressOnExit: (Long, Long) -> Unit,
+    onSkipToNext: () -> Unit,
+    onCancelAutoAdvance: () -> Unit,
+    onResumeFromSaved: () -> Unit,
+    onRestartEpisode: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val focusRequester = remember { FocusRequester() }
 
     var isPlaying by remember { mutableStateOf(true) }
     var isBuffering by remember { mutableStateOf(true) }
@@ -218,14 +287,11 @@ fun VideoPlayer(
     var isLocked by remember { mutableStateOf(false) }
     var playbackSpeed by remember { mutableFloatStateOf(1f) }
     var showSpeedSheet by remember { mutableStateOf(false) }
+    var hasSeenkedToSaved by remember { mutableStateOf(false) }
 
     // Double-tap seek feedback
     var showSeekForward by remember { mutableStateOf(false) }
     var showSeekBackward by remember { mutableStateOf(false) }
-
-    // Horizontal swipe seek
-    var seekPreviewPosition by remember { mutableLongStateOf(-1L) }
-    var isSwipeSeeking by remember { mutableStateOf(false) }
 
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -234,6 +300,14 @@ fun VideoPlayer(
             prepare()
             playWhenReady = true
         }
+    }
+
+    // Cuando cambia la URL del stream (auto-advance)
+    LaunchedEffect(streamUrl) {
+        hasSeenkedToSaved = false
+        exoPlayer.setMediaItem(MediaItem.fromUri(streamUrl))
+        exoPlayer.prepare()
+        exoPlayer.playWhenReady = true
     }
 
     DisposableEffect(exoPlayer) {
@@ -246,24 +320,61 @@ fun VideoPlayer(
                 isBuffering = state == Player.STATE_BUFFERING
                 if (state == Player.STATE_READY) {
                     duration = exoPlayer.duration
+                    // Seek a posicion guardada
+                    if (!hasSeenkedToSaved && savedPositionMs > 0 && !showResumeDialog) {
+                        exoPlayer.seekTo(savedPositionMs)
+                        hasSeenkedToSaved = true
+                    }
+                }
+                if(state == Player.STATE_ENDED){
+                    onBackClick()
                 }
             }
         }
         exoPlayer.addListener(listener)
         onDispose {
+            onSaveProgressOnExit(exoPlayer.currentPosition, exoPlayer.duration)
             exoPlayer.removeListener(listener)
             exoPlayer.release()
         }
     }
 
-    // Position updater
+    // Seek cuando el usuario elige reanudar
+    LaunchedEffect(showResumeDialog) {
+        if (!showResumeDialog && savedPositionMs > 0 && !hasSeenkedToSaved) {
+            // Esperar a que el player este listo
+            while (exoPlayer.playbackState != Player.STATE_READY) {
+                delay(100)
+            }
+            exoPlayer.seekTo(savedPositionMs)
+            hasSeenkedToSaved = true
+        }
+    }
+
+    // Guardar progreso al pausar
     LaunchedEffect(isPlaying) {
+        if (!isPlaying && duration > 0 && currentPosition > 30_000) {
+            onPositionUpdate(currentPosition, duration)
+        }
+    }
+
+    // Position updater + guardado periodico cada 10 segundos
+    LaunchedEffect(streamUrl) {
+        var tickCount = 0
         while (true) {
-            if (!isSeeking && !isSwipeSeeking) {
+            if (!isSeeking) {
                 currentPosition = exoPlayer.currentPosition
                 duration = exoPlayer.duration.coerceAtLeast(1L)
                 sliderPosition = currentPosition.toFloat() / duration.toFloat()
             }
+
+            // Reportar posicion al ViewModel cada 10 segundos (20 ticks * 500ms)
+            tickCount++
+            if (tickCount >= 20 && isPlaying) {
+                tickCount = 0
+                onPositionUpdate(exoPlayer.currentPosition, exoPlayer.duration)
+            }
+
             delay(500)
         }
     }
@@ -276,24 +387,58 @@ fun VideoPlayer(
         }
     }
 
-    // Double-tap seek feedback auto-hide
+    // Double-tap feedback auto-hide
     LaunchedEffect(showSeekForward) {
-        if (showSeekForward) {
-            delay(600)
-            showSeekForward = false
-        }
+        if (showSeekForward) { delay(600); showSeekForward = false }
     }
     LaunchedEffect(showSeekBackward) {
-        if (showSeekBackward) {
-            delay(600)
-            showSeekBackward = false
-        }
+        if (showSeekBackward) { delay(600); showSeekBackward = false }
+    }
+
+    // Solicitar focus para D-pad
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .focusRequester(focusRequester)
+            .onKeyEvent { event ->
+                // Let D-pad events pass through to dialogs when they are visible
+                if (showResumeDialog) return@onKeyEvent false
+
+                // Only react on ACTION_DOWN to avoid double-firing (DOWN + UP)
+                if (event.nativeKeyEvent.action != KeyEvent.ACTION_DOWN) return@onKeyEvent true
+
+                when (event.nativeKeyEvent.keyCode) {
+                    KeyEvent.KEYCODE_BACK ->{
+                        onBackClick()
+                        true
+                    }
+                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                        if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
+                        true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                        exoPlayer.seekTo((exoPlayer.currentPosition - 10_000).coerceAtLeast(0))
+                        showSeekBackward = true
+                        true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                        exoPlayer.seekTo((exoPlayer.currentPosition + 10_000).coerceAtMost(exoPlayer.duration))
+                        showSeekForward = true
+                        true
+                    }
+                    KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        if (!showControls) onToggleControls()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            .focusable()
     ) {
         // Video surface
         AndroidView(
@@ -302,12 +447,15 @@ fun VideoPlayer(
                     player = exoPlayer
                     useController = false
                     setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+                    // Prevent PlayerView from stealing D-pad focus
+                    isFocusable = false
+                    isFocusableInTouchMode = false
                 }
             },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Gesture layer — double-tap to seek, single-tap to toggle controls, swipe to scrub
+        // Gesture layer
         Row(modifier = Modifier.fillMaxSize()) {
             // Left half — double-tap rewind
             Box(
@@ -319,9 +467,7 @@ fun VideoPlayer(
                             detectTapGestures(
                                 onTap = { onToggleControls() },
                                 onDoubleTap = {
-                                    exoPlayer.seekTo(
-                                        (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
-                                    )
+                                    exoPlayer.seekTo((exoPlayer.currentPosition - 10_000).coerceAtLeast(0))
                                     showSeekBackward = true
                                 }
                             )
@@ -331,7 +477,6 @@ fun VideoPlayer(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                // Rewind ripple feedback
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showSeekBackward,
                     enter = scaleIn(tween(200)) + fadeIn(tween(200)),
@@ -340,25 +485,12 @@ fun VideoPlayer(
                     Box(
                         modifier = Modifier
                             .size(72.dp)
-                            .background(
-                                color = Primary.copy(alpha = 0.3f),
-                                shape = CircleShape
-                            ),
+                            .background(color = Primary.copy(alpha = 0.3f), shape = CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Filled.Replay10,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Text(
-                                text = "-10s",
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Icon(Icons.Filled.Replay10, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                            Text("-10s", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -374,10 +506,7 @@ fun VideoPlayer(
                             detectTapGestures(
                                 onTap = { onToggleControls() },
                                 onDoubleTap = {
-                                    exoPlayer.seekTo(
-                                        (exoPlayer.currentPosition + 10_000)
-                                            .coerceAtMost(exoPlayer.duration)
-                                    )
+                                    exoPlayer.seekTo((exoPlayer.currentPosition + 10_000).coerceAtMost(exoPlayer.duration))
                                     showSeekForward = true
                                 }
                             )
@@ -387,7 +516,6 @@ fun VideoPlayer(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                // Forward ripple feedback
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showSeekForward,
                     enter = scaleIn(tween(200)) + fadeIn(tween(200)),
@@ -396,25 +524,12 @@ fun VideoPlayer(
                     Box(
                         modifier = Modifier
                             .size(72.dp)
-                            .background(
-                                color = Secondary.copy(alpha = 0.3f),
-                                shape = CircleShape
-                            ),
+                            .background(color = Secondary.copy(alpha = 0.3f), shape = CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Filled.Forward10,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Text(
-                                text = "+10s",
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Icon(Icons.Filled.Forward10, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                            Text("+10s", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -427,41 +542,14 @@ fun VideoPlayer(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(56.dp)
-                    .background(
-                        color = Background.copy(alpha = 0.6f),
-                        shape = CircleShape
-                    ),
+                    .background(color = Background.copy(alpha = 0.6f), shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    color = Primary,
-                    strokeWidth = 3.dp,
-                    modifier = Modifier.size(32.dp)
-                )
+                CircularProgressIndicator(color = Primary, strokeWidth = 3.dp, modifier = Modifier.size(32.dp))
             }
         }
 
-        // Swipe seek preview overlay
-        if (isSwipeSeeking && seekPreviewPosition >= 0) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .background(
-                        color = Background.copy(alpha = 0.85f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = formatDuration(seekPreviewPosition),
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // Lock button — always visible when controls are shown
+        // Lock button
         AnimatedVisibility(
             visible = showControls,
             enter = fadeIn(tween(200)),
@@ -475,8 +563,7 @@ fun VideoPlayer(
                 modifier = Modifier
                     .size(40.dp)
                     .background(
-                        color = if (isLocked) Secondary.copy(alpha = 0.8f)
-                        else Surface.copy(alpha = 0.6f),
+                        color = if (isLocked) Secondary.copy(alpha = 0.8f) else Surface.copy(alpha = 0.6f),
                         shape = CircleShape
                     )
             ) {
@@ -489,7 +576,7 @@ fun VideoPlayer(
             }
         }
 
-        // Main controls overlay (hidden when locked)
+        // Main controls overlay
         AnimatedVisibility(
             visible = showControls && !isLocked,
             enter = fadeIn(tween(250)),
@@ -497,18 +584,13 @@ fun VideoPlayer(
             modifier = Modifier.fillMaxSize()
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-
-                // ── Top bar ──
+                // Top bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.75f),
-                                    Color.Black.copy(alpha = 0.3f),
-                                    Color.Transparent
-                                )
+                                listOf(Color.Black.copy(alpha = 0.75f), Color.Black.copy(alpha = 0.3f), Color.Transparent)
                             )
                         )
                         .padding(horizontal = 12.dp, vertical = 12.dp)
@@ -516,16 +598,9 @@ fun VideoPlayer(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Color.White, modifier = Modifier.size(24.dp))
                     }
-
                     Spacer(modifier = Modifier.width(4.dp))
-
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = episodeTitle,
@@ -536,8 +611,6 @@ fun VideoPlayer(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-
-                    // Speed button
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
@@ -554,49 +627,30 @@ fun VideoPlayer(
                     }
                 }
 
-                // ── Center controls ──
+                // Center controls
                 Row(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalArrangement = Arrangement.spacedBy(40.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Rewind
                     IconButton(
-                        onClick = {
-                            exoPlayer.seekTo(
-                                (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
-                            )
-                        },
+                        onClick = { exoPlayer.seekTo((exoPlayer.currentPosition - 10_000).coerceAtLeast(0)) },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Replay10,
-                            contentDescription = "Retroceder 10s",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
+                        Icon(Icons.Filled.Replay10, "Retroceder 10s", tint = Color.White, modifier = Modifier.size(32.dp))
                     }
 
-                    // Play/Pause
                     Box(
                         modifier = Modifier
                             .size(68.dp)
                             .background(
-                                brush = Brush.linearGradient(
-                                    listOf(
-                                        Primary,
-                                        PrimaryVariant,
-                                        Secondary
-                                    )
-                                ),
+                                brush = Brush.linearGradient(listOf(Primary, PrimaryVariant, Secondary)),
                                 shape = CircleShape
                             )
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) {
-                                if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
-                            },
+                            ) { if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play() },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -607,42 +661,26 @@ fun VideoPlayer(
                         )
                     }
 
-                    // Forward
                     IconButton(
-                        onClick = {
-                            exoPlayer.seekTo(
-                                (exoPlayer.currentPosition + 10_000)
-                                    .coerceAtMost(exoPlayer.duration)
-                            )
-                        },
+                        onClick = { exoPlayer.seekTo((exoPlayer.currentPosition + 10_000).coerceAtMost(exoPlayer.duration)) },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Forward10,
-                            contentDescription = "Avanzar 10s",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
+                        Icon(Icons.Filled.Forward10, "Avanzar 10s", tint = Color.White, modifier = Modifier.size(32.dp))
                     }
                 }
 
-                // ── Bottom bar ──
+                // Bottom bar
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.3f),
-                                    Color.Black.copy(alpha = 0.75f)
-                                )
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.3f), Color.Black.copy(alpha = 0.75f))
                             )
                         )
                         .padding(bottom = 8.dp)
                         .align(Alignment.BottomCenter)
                 ) {
-                    // Time labels above slider
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -650,35 +688,21 @@ fun VideoPlayer(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = formatDuration(
-                                if (isSeeking) (sliderPosition * duration).toLong()
-                                else currentPosition
-                            ),
+                            text = formatDuration(if (isSeeking) (sliderPosition * duration).toLong() else currentPosition),
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
                             fontWeight = FontWeight.Medium
                         )
-
-                        // Remaining time
                         Text(
-                            text = "-${
-                                formatDuration(
-                                    (duration - if (isSeeking) (sliderPosition * duration).toLong()
-                                    else currentPosition).coerceAtLeast(0)
-                                )
-                            }",
+                            text = "-${formatDuration((duration - if (isSeeking) (sliderPosition * duration).toLong() else currentPosition).coerceAtLeast(0))}",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.6f)
                         )
                     }
 
-                    // Seek bar
                     Slider(
                         value = sliderPosition,
-                        onValueChange = { value ->
-                            isSeeking = true
-                            sliderPosition = value
-                        },
+                        onValueChange = { isSeeking = true; sliderPosition = it },
                         onValueChangeFinished = {
                             isSeeking = false
                             exoPlayer.seekTo((sliderPosition * duration).toLong())
@@ -697,7 +721,113 @@ fun VideoPlayer(
             }
         }
 
-        // Playback speed bottom sheet
+        // Overlay: Siguiente episodio
+        AnimatedVisibility(
+            visible = showNextEpisodeOverlay,
+            enter = fadeIn(tween(300)),
+            exit = fadeOut(tween(300)),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = Surface.copy(alpha = 0.95f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Siguiente episodio en ${nextEpisodeCountdown}s",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = nextEpisodeTitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onSkipToNext,
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Icon(Icons.Filled.SkipNext, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Ver ahora", style = MaterialTheme.typography.labelMedium)
+                        }
+                        OutlinedButton(
+                            onClick = onCancelAutoAdvance,
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Text("Cancelar", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Dialog: Reanudar o empezar de nuevo
+        if (showResumeDialog) {
+            val resumeFocusRequester = remember { FocusRequester() }
+
+            LaunchedEffect(Unit) {
+                resumeFocusRequester.requestFocus()
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(Surface, RoundedCornerShape(20.dp))
+                        .padding(24.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Progreso guardado",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Tienes progreso en ${formatDuration(savedPositionMs)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                        Button(
+                            onClick = onResumeFromSaved,
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(resumeFocusRequester)
+                        ) {
+                            Text("Continuar desde ${formatDuration(savedPositionMs)}", fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = onRestartEpisode,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Empezar de nuevo", color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Speed selector sheet
         if (showSpeedSheet) {
             SpeedSelectorSheet(
                 currentSpeed = playbackSpeed,
@@ -734,7 +864,7 @@ fun SpeedSelectorSheet(
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = "Velocidad de reproducción",
+                text = "Velocidad de reproduccion",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -747,10 +877,7 @@ fun SpeedSelectorSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSpeedSelected(speed) }
-                        .background(
-                            if (isSelected) PrimaryContainer.copy(alpha = 0.4f)
-                            else Color.Transparent
-                        )
+                        .background(if (isSelected) PrimaryContainer.copy(alpha = 0.4f) else Color.Transparent)
                         .padding(horizontal = 24.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -761,13 +888,8 @@ fun SpeedSelectorSheet(
                         color = if (isSelected) Primary else Color.White,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                     )
-
                     if (isSelected) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(Primary, CircleShape)
-                        )
+                        Box(modifier = Modifier.size(8.dp).background(Primary, CircleShape))
                     }
                 }
             }

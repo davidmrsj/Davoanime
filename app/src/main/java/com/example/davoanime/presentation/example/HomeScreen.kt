@@ -44,7 +44,10 @@ import coil.request.ImageRequest
 import com.example.davoanime.R
 import com.example.davoanime.domain.model.HorarioAnime
 import com.example.davoanime.domain.model.Reciente
+import com.example.davoanime.domain.model.WatchProgress
+import com.example.davoanime.presentation.components.ContinueWatchingCard
 import com.example.davoanime.presentation.navigation.Screen
+import com.example.davoanime.presentation.util.isTv
 
 @Composable
 fun HomeScreen(
@@ -55,10 +58,13 @@ fun HomeScreen(
     HomeContent(
         state = state,
         onRecienteClick = { reciente ->
-            navController?.navigate(Screen.Detail.createRoute(reciente.animeId))
+            navController?.navigate(Screen.Player.createRoute(reciente.animeId, reciente.id))
         },
         onTodayAnimeClick = { anime ->
-            navController?.navigate(Screen.Detail.createRoute(anime.id))
+            navController?.navigate(Screen.Player.createRoute(anime.ultimo?.id ?: 0, anime.id))
+        },
+        onContinueWatchingClick = { progress ->
+            navController?.navigate(Screen.Player.createRoute(progress.episodeId, progress.animeId))
         },
         onRetry = viewModel::retry
     )
@@ -69,11 +75,13 @@ fun HomeContent(
     state: ExampleUiState,
     onRecienteClick: (Reciente) -> Unit,
     onTodayAnimeClick: (HorarioAnime) -> Unit,
+    onContinueWatchingClick: (WatchProgress) -> Unit,
     onRetry: () -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val recentCardWidth = (screenWidth - 16.dp * 2 - 12.dp) / 2.3f
-    val todayCardWidth = (screenWidth - 16.dp * 2 - 12.dp) / 2.5f
+    val divisionWidthCards = if (isTv(LocalContext.current)) 4.6f else 2.3f
+    val recentCardWidth = (screenWidth - 16.dp * 2 - 12.dp) / divisionWidthCards
+    val todayCardWidth = (screenWidth - 16.dp * 2 - 12.dp) / divisionWidthCards
 
     Scaffold { paddingValues ->
         when {
@@ -127,6 +135,37 @@ fun HomeContent(
                                 vertical = dimensionResource(id = R.dimen.spacing_12)
                             )
                         )
+                    }
+
+                    // Section: Seguir Viendo (solo si hay items)
+                    if (state.continueWatching.isNotEmpty()) {
+                        item {
+                            SectionHeader(title = "Seguir Viendo")
+                        }
+
+                        item {
+                            val cwCardWidth = (screenWidth - 16.dp * 2 - 12.dp) / divisionWidthCards
+                            LazyRow(
+                                contentPadding = PaddingValues(
+                                    horizontal = dimensionResource(id = R.dimen.spacing_16)
+                                ),
+                                horizontalArrangement = Arrangement.spacedBy(
+                                    dimensionResource(id = R.dimen.spacing_12)
+                                )
+                            ) {
+                                items(state.continueWatching, key = { it.episodeId }) { progress ->
+                                    ContinueWatchingCard(
+                                        item = progress,
+                                        cardWidth = cwCardWidth,
+                                        onClick = { onContinueWatchingClick(progress) }
+                                    )
+                                }
+                            }
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_8)))
+                        }
                     }
 
                     // Section: Últimos Episodios

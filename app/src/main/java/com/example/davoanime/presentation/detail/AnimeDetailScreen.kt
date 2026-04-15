@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -63,6 +65,7 @@ import com.example.davoanime.R
 import com.example.davoanime.domain.model.AnimeDetail
 import com.example.davoanime.domain.model.Episode
 import com.example.davoanime.domain.model.RelatedAnime
+import com.example.davoanime.domain.model.WatchProgress
 import com.example.davoanime.presentation.navigation.Screen
 import com.example.davoanime.presentation.theme.Primary
 import com.example.davoanime.presentation.theme.Secondary
@@ -74,63 +77,76 @@ fun AnimeDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    when {
-        state.isLoading -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+    Scaffold { paddingValues ->
+        when {
+            state.isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
-        }
-        state.error != null -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = state.error ?: "Error",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_16)))
-                    Button(onClick = viewModel::retry) {
-                        Text("Reintentar")
+
+            state.error != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = state.error ?: "Error",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_16)))
+                        Button(onClick = viewModel::retry) {
+                            Text("Reintentar")
+                        }
                     }
                 }
             }
-        }
-        state.animeDetail != null -> {
-            AnimeDetailContent(
-                detail = state.animeDetail!!,
-                episodes = state.episodes,
-                isSynopsisExpanded = state.isSynopsisExpanded,
-                selectedTabIndex = state.selectedTabIndex,
-                onToggleSynopsis = viewModel::toggleSynopsis,
-                onTabSelected = viewModel::selectTab,
-                onBackClick = { navController.popBackStack() },
-                onWatchClick = {
-                    state.animeDetail?.let { detail ->
-                        navController.navigate(Screen.Episodes.createRoute(detail.id))
-                    }
-                },
-                onEpisodeClick = { episode ->
-                    navController.navigate(Screen.Player.createRoute(episode.id))
-                },
-                onAllEpisodesClick = {
-                    navController.navigate(Screen.Episodes.createRoute(state.animeDetail!!.id))
-                },
-                onRelatedClick = { related ->
-                    navController.navigate(Screen.Detail.createRoute(related.id))
-                }
-            )
+
+            state.animeDetail != null -> {
+                AnimeDetailContent(
+                    detail = state.animeDetail!!,
+                    episodes = state.episodes,
+                    episodeProgress = state.episodeProgress,
+                    isSynopsisExpanded = state.isSynopsisExpanded,
+                    selectedTabIndex = state.selectedTabIndex,
+                    onToggleSynopsis = viewModel::toggleSynopsis,
+                    onTabSelected = viewModel::selectTab,
+                    onBackClick = { navController.popBackStack() },
+                    onWatchClick = {
+                        state.animeDetail?.let { detail ->
+                            navController.navigate(Screen.Episodes.createRoute(detail.id))
+                        }
+                    },
+                    onEpisodeClick = { episode ->
+                        navController.navigate(
+                            Screen.Player.createRoute(
+                                episode.id,
+                                state.animeDetail!!.id
+                            )
+                        )
+                    },
+                    onAllEpisodesClick = {
+                        navController.navigate(Screen.Episodes.createRoute(state.animeDetail!!.id))
+                    },
+                    onRelatedClick = { related ->
+                        navController.navigate(Screen.Detail.createRoute(related.id, related.image))
+                    },
+                    paddingValues = paddingValues,
+                    imageUrl = state.imageUrl
+                )
+            }
         }
     }
+
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -138,6 +154,7 @@ fun AnimeDetailScreen(
 fun AnimeDetailContent(
     detail: AnimeDetail,
     episodes: List<Episode>,
+    episodeProgress: Map<Int, WatchProgress> = emptyMap(),
     isSynopsisExpanded: Boolean,
     selectedTabIndex: Int,
     onToggleSynopsis: () -> Unit,
@@ -146,13 +163,15 @@ fun AnimeDetailContent(
     onWatchClick: () -> Unit,
     onEpisodeClick: (Episode) -> Unit,
     onAllEpisodesClick: () -> Unit,
-    onRelatedClick: (RelatedAnime) -> Unit
+    onRelatedClick: (RelatedAnime) -> Unit,
+    paddingValues: PaddingValues,
+    imageUrl: String?
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(bottom = 16.dp)
+        contentPadding = paddingValues
     ) {
         // Hero Image
         item {
@@ -163,7 +182,7 @@ fun AnimeDetailContent(
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(detail.image)
+                        .data(imageUrl)
                         .crossfade(true)
                         .build(),
                     contentDescription = detail.title,
@@ -206,26 +225,28 @@ fun AnimeDetailContent(
                     )
                 }
 
-                // Type badge
-                Box(
-                    modifier = Modifier
-                        .padding(dimensionResource(id = R.dimen.spacing_16))
-                        .align(Alignment.TopEnd)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                            shape = RoundedCornerShape(dimensionResource(id = R.dimen.spacing_4))
+                if (detail.tipo.isNotEmpty()) {
+                    // Type badge
+                    Box(
+                        modifier = Modifier
+                            .padding(dimensionResource(id = R.dimen.spacing_16))
+                            .align(Alignment.TopEnd)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                shape = RoundedCornerShape(dimensionResource(id = R.dimen.spacing_4))
+                            )
+                            .padding(
+                                horizontal = dimensionResource(id = R.dimen.spacing_8),
+                                vertical = dimensionResource(id = R.dimen.spacing_4)
+                            )
+                    ) {
+                        Text(
+                            text = detail.tipo,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
                         )
-                        .padding(
-                            horizontal = dimensionResource(id = R.dimen.spacing_8),
-                            vertical = dimensionResource(id = R.dimen.spacing_4)
-                        )
-                ) {
-                    Text(
-                        text = detail.tipo,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                    }
                 }
             }
         }
@@ -280,7 +301,7 @@ fun AnimeDetailContent(
                         modifier = Modifier.size(14.dp)
                     )
                 }
-                
+
                 Text(
                     text = String.format("%.1f", rating),
                     style = MaterialTheme.typography.bodySmall,
@@ -455,6 +476,7 @@ fun AnimeDetailContent(
                 items(previewEpisodes, key = { it.id }) { episode ->
                     EpisodePreviewCard(
                         episode = episode,
+                        isWatched = episodeProgress[episode.id]?.isWatched == true,
                         onClick = { onEpisodeClick(episode) }
                     )
                 }
@@ -497,6 +519,7 @@ fun AnimeDetailContent(
                     }
                 }
             }
+
             1 -> {
                 // Info tab
                 item {
@@ -517,9 +540,9 @@ fun AnimeDetailContent(
                                 .height(200.dp)
                                 .clip(RoundedCornerShape(dimensionResource(id = R.dimen.radius_12)))
                         )
-                        
+
                         Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_4)))
-                        
+
                         // Tags
                         if (detail.tags.isNotEmpty()) {
                             Column {
@@ -531,7 +554,11 @@ fun AnimeDetailContent(
                                 )
                                 Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_8)))
                                 FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_8)),
+                                    horizontalArrangement = Arrangement.spacedBy(
+                                        dimensionResource(
+                                            id = R.dimen.spacing_8
+                                        )
+                                    ),
                                     verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_8))
                                 ) {
                                     detail.tags.forEach { tag ->
@@ -559,7 +586,7 @@ fun AnimeDetailContent(
 
                         // Type
                         InfoRow(label = "TIPO", value = detail.tipo)
-                        
+
                         // Status
                         InfoRow(label = "ESTADO", value = detail.estado)
 
@@ -591,7 +618,9 @@ fun AnimeDetailContent(
                                     Icon(
                                         imageVector = Icons.Filled.Star,
                                         contentDescription = null,
-                                        tint = if (index < rating.toInt()) Color(0xFFFFD700) else Color(0xFF424242),
+                                        tint = if (index < rating.toInt()) Color(0xFFFFD700) else Color(
+                                            0xFF424242
+                                        ),
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -603,7 +632,7 @@ fun AnimeDetailContent(
                                 )
                             }
                         }
-                        
+
                         // Votes
                         InfoRow(label = "VOTOS", value = formatVotes(detail.votos))
                     }
@@ -639,7 +668,9 @@ fun AnimeDetailContent(
                         horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_12))
                     ) {
                         items(animes, key = { it.id }) { related ->
-                            RelatedAnimeCard(related = related, onClick = { onRelatedClick(related) })
+                            RelatedAnimeCard(
+                                related = related,
+                                onClick = { onRelatedClick(related) })
                         }
                     }
                 }
@@ -674,7 +705,9 @@ fun AnimeDetailContent(
                         horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_12))
                     ) {
                         items(animes, key = { it.id }) { related ->
-                            RelatedAnimeCard(related = related, onClick = { onRelatedClick(related) })
+                            RelatedAnimeCard(
+                                related = related,
+                                onClick = { onRelatedClick(related) })
                         }
                     }
                 }
@@ -691,6 +724,7 @@ fun AnimeDetailContent(
 @Composable
 fun EpisodePreviewCard(
     episode: Episode,
+    isWatched: Boolean = false,
     onClick: () -> Unit
 ) {
     Card(
@@ -744,6 +778,16 @@ fun EpisodePreviewCard(
                 )
             }
 
+            if (isWatched) {
+                Icon(
+                    imageVector = Icons.Filled.Visibility,
+                    contentDescription = "Visto",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_4)))
+            }
+
             Icon(
                 imageVector = Icons.Filled.PlayArrow,
                 contentDescription = "Play",
@@ -778,10 +822,12 @@ fun RelatedAnimeCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(0.75f)
-                    .clip(RoundedCornerShape(
-                        topStart = dimensionResource(id = R.dimen.radius_12),
-                        topEnd = dimensionResource(id = R.dimen.radius_12)
-                    ))
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = dimensionResource(id = R.dimen.radius_12),
+                            topEnd = dimensionResource(id = R.dimen.radius_12)
+                        )
+                    )
             )
 
             Text(
